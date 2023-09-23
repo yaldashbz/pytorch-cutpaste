@@ -16,8 +16,6 @@ class Repeat(Dataset):
         return self.org_dataset[idx % self.org_length]
 
 class MVTecAT(Dataset):
-    """Face Landmarks dataset."""
-
     def __init__(self, root_dir, defect_name, size, transform=None, mode="train"):
         """
         Args:
@@ -37,7 +35,7 @@ class MVTecAT(Dataset):
             self.image_names = list((self.root_dir / defect_name / "train" / "good").glob("*.png"))
             print("loading images")
             # during training we cache the smaller images for performance reasons (not a good coding style)
-            #self.imgs = [Image.open(file).resize((size,size)).convert("RGB") for file in self.image_names]
+            # self.imgs = [Image.open(file).resize((size,size)).convert("RGB") for file in self.image_names]
             self.imgs = Parallel(n_jobs=10)(delayed(lambda file: Image.open(file).resize((size,size)).convert("RGB"))(file) for file in self.image_names)
             print(f"loaded {len(self.imgs)} images")
         else:

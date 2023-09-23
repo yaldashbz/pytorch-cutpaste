@@ -32,7 +32,8 @@ def run_training(data_type="screw",
                  cutpate_type=CutPasteNormal,
                  device = "cuda",
                  workers=8,
-                 size = 256):
+                 size = 256,
+                 root_dir="Data"):
     torch.multiprocessing.freeze_support()
     # TODO: use script params for hyperparameter
     # Temperature Hyperparameter currently not used
@@ -60,7 +61,7 @@ def run_training(data_type="screw",
     train_transform.transforms.append(cutpate_type(transform = after_cutpaste_transform))
     # train_transform.transforms.append(transforms.ToTensor())
 
-    train_data = MVTecAT("Data", data_type, transform = train_transform, size=int(size * (1/min_scale)))
+    train_data = MVTecAT(root_dir, data_type, transform=train_transform, size=int(size * (1/min_scale)))
     dataloader = DataLoader(Repeat(train_data, 3000), batch_size=batch_size, drop_last=True,
                             shuffle=True, num_workers=workers, collate_fn=cut_paste_collate_fn,
                             persistent_workers=True, pin_memory=True, prefetch_factor=5)
@@ -97,7 +98,7 @@ def run_training(data_type="screw",
     dataloader_inf =  get_data_inf()
     # From paper: "Note that, unlike conventional definition for an epoch,
     #              we define 256 parameter update steps as one epoch.
-    for step in tqdm(range(epochs)):
+    for step in range(epochs):
         epoch = int(step / 1)
         if epoch == freeze_resnet:
             model.unfreeze()
@@ -141,8 +142,10 @@ def run_training(data_type="screw",
 #         print(y)
         accuracy = torch.true_divide(torch.sum(predicted==y), predicted.size(0))
         writer.add_scalar('acc', accuracy, step)
+        print(f'Epoch {step} Acc: {accuracy}')
         if scheduler is not None:
             writer.add_scalar('lr', scheduler.get_last_lr()[0], step)
+            print('LR: ', scheduler.get_last_lr()[0])
         
         # save embed for validation:
         if test_epochs > 0 and epoch % test_epochs == 0:
@@ -159,7 +162,7 @@ def run_training(data_type="screw",
             # batch_embeds = torch.cat(batch_embeds)
             # print(batch_embeds.shape)
             model.eval()
-            roc_auc= eval_model(model_name, data_type, device=device,
+            roc_auc= eval_model(model_name, root_dir, data_type, device=device,
                                 save_plots=False,
                                 size=size,
                                 show_training_data=False,
@@ -167,6 +170,7 @@ def run_training(data_type="screw",
                                 #train_embed=batch_embeds)
             model.train()
             writer.add_scalar('eval_auc', roc_auc, step)
+            print(f'Eval {step}: {roc_auc}')
 
 
     torch.save(model.state_dict(), model_dir / f"{model_name}.tch")
@@ -181,6 +185,9 @@ if __name__ == '__main__':
     
     parser.add_argument('--model_dir', default="models",
                         help='output folder of the models , (default: models)')
+    
+    parser.add_argument('--root_dir', default="Data",
+                        help='folder of the dataset , (default: Data)')
     
     parser.add_argument('--no-pretrained', dest='pretrained', default=True, action='store_false',
                         help='use pretrained values to initalize ResNet18 , (default: True)')
@@ -260,4 +267,5 @@ if __name__ == '__main__':
                      head_layer=args.head_layer,
                      device=device,
                      cutpate_type=variant,
-                     workers=args.workers)
+                     workers=args.workers,
+                     root_dir=Path(args.root_dir))

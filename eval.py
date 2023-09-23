@@ -22,9 +22,9 @@ test_data_eval = None
 test_transform = None
 cached_type = None
 
-def get_train_embeds(model, size, defect_type, transform, device):
+def get_train_embeds(model, root_dir, size, defect_type, transform, device):
     # train data / train kde
-    test_data = MVTecAT("Data", defect_type, size, transform=transform, mode="train")
+    test_data = MVTecAT(root_dir, defect_type, size, transform=transform, mode="train")
 
     dataloader_train = DataLoader(test_data, batch_size=64,
                             shuffle=False, num_workers=0)
@@ -37,7 +37,7 @@ def get_train_embeds(model, size, defect_type, transform, device):
     train_embed = torch.cat(train_embed)
     return train_embed
 
-def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256, show_training_data=True, model=None, train_embed=None, head_layer=8, density=GaussianDensityTorch()):
+def eval_model(modelname, root_dir, defect_type, device="cpu", save_plots=False, size=256, show_training_data=True, model=None, train_embed=None, head_layer=8, density=GaussianDensityTorch()):
     # create test dataset
     global test_data_eval,test_transform, cached_type
 
@@ -49,7 +49,7 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
         test_transform.transforms.append(transforms.ToTensor())
         test_transform.transforms.append(transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                             std=[0.229, 0.224, 0.225]))
-        test_data_eval = MVTecAT("Data", defect_type, size, transform = test_transform, mode="test")
+        test_data_eval = MVTecAT(root_dir, defect_type, size, transform = test_transform, mode="test")
 
     dataloader_test = DataLoader(test_data_eval, batch_size=64,
                                     shuffle=False, num_workers=0)
@@ -80,7 +80,7 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
     embeds = torch.cat(embeds)
 
     if train_embed is None:
-        train_embed = get_train_embeds(model, size, defect_type, test_transform, device)
+        train_embed = get_train_embeds(model, root_dir, size, defect_type, test_transform, device)
 
     # norm embeds
     embeds = torch.nn.functional.normalize(embeds, p=2, dim=1)
@@ -112,7 +112,7 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
             train_transform.transforms.append(CutPaste(transform=after_cutpaste_transform))
             # train_transform.transforms.append(transforms.ToTensor())
 
-            train_data = MVTecAT("Data", defect_type, transform=train_transform, size=size)
+            train_data = MVTecAT(root_dir, defect_type, transform=train_transform, size=size)
             dataloader_train = DataLoader(train_data, batch_size=32,
                         shuffle=True, num_workers=8, collate_fn=cut_paste_collate_fn,
                         persistent_workers=True)
@@ -200,6 +200,9 @@ if __name__ == '__main__':
     parser.add_argument('--model_dir', default="models",
                     help=' directory contating models to evaluate (default: models)')
     
+    parser.add_argument('--root_dir', default="Data",
+                        help='folder of the dataset , (default: Data)')
+    
     parser.add_argument('--cuda', default=False, type=str2bool,
                     help='use cuda for model predictions (default: False)')
 
@@ -255,7 +258,7 @@ if __name__ == '__main__':
     for model_name, data_type in zip(model_names, types):
         print(f"evaluating {data_type}")
 
-        roc_auc = eval_model(model_name, data_type, save_plots=args.save_plots, device=device, head_layer=args.head_layer, density=density())
+        roc_auc = eval_model(model_name, args.root_dir, data_type, save_plots=args.save_plots, device=device, head_layer=args.head_layer, density=density())
         print(f"{data_type} AUC: {roc_auc}")
         obj["defect_type"].append(data_type)
         obj["roc_auc"].append(roc_auc)
