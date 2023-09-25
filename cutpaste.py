@@ -22,12 +22,11 @@ class CutPaste(object):
                                                       contrast = colorJitter,
                                                       saturation = colorJitter,
                                                       hue = colorJitter)
-    def __call__(self, org_img, img):
-        # apply transforms to both images
+    def __call__(self, img):
         if self.transform:
             img = self.transform(img)
-            org_img = self.transform(org_img)
-        return org_img, img
+            # org_img = self.transform(org_img)
+        return img
     
 class CutPasteNormal(CutPaste):
     """Randomly copy one patche from the image and paste it somewere else.
@@ -74,7 +73,7 @@ class CutPasteNormal(CutPaste):
         augmented = img.copy()
         augmented.paste(patch, insert_box)
         
-        return super().__call__(img, augmented)
+        return super().__call__(augmented)
 
 class CutPasteScar(CutPaste):
     """Randomly copy one patche from the image and paste it somewere else.
@@ -120,7 +119,7 @@ class CutPasteScar(CutPaste):
         augmented = img.copy()
         augmented.paste(patch, (to_location_w, to_location_h), mask=mask)
         
-        return super().__call__(img, augmented)
+        return super().__call__(augmented)
     
 class CutPasteUnion(object):
     def __init__(self, **kwags):

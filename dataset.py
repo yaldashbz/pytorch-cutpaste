@@ -46,18 +46,16 @@ class MVTecAT(Dataset):
         return len(self.image_names)
 
     def __getitem__(self, idx):
-        if self.mode == "train":
-            # img = Image.open(self.image_names[idx])
-            # img = img.convert("RGB")
-            img = self.imgs[idx].copy()
-            if self.transform is not None:
-                img = self.transform(img)
-            return img
-        else:
-            filename = self.image_names[idx]
-            label = filename.parts[-2]
-            img = Image.open(filename)
-            img = img.resize((self.size,self.size)).convert("RGB")
-            if self.transform is not None:
-                img = self.transform(img)
-            return img, label != "good"
+        filename = self.image_names[idx]
+        label = filename.parts[-2]
+        img = Image.open(filename)
+        img = img.resize((self.size,self.size)).convert("RGB")
+        if self.transform is not None:
+            img = self.transform(img)
+        return img, label != "good"
+
+
+class CutPasteMVTecAD(MVTecAT):
+    def __getitem__(self, idx):
+        img, _ = super().__getitem__(idx)
+        return img, 1.

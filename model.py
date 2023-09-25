@@ -33,7 +33,7 @@ class ProjectionNet(nn.Module):
         embeds = self.resnet18(x)
         tmp = self.head(embeds)
         logits = self.out(tmp)
-        return embeds, logits
+        return logits, embeds
     
     def freeze_resnet(self):
         # freez full resnet18
