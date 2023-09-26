@@ -1,15 +1,27 @@
 import torch
+import faiss
+import numpy as np
+
+
+def knn_score(train_set, test_set, n_neighbours=2):
+    """
+    Calculates the KNN distance
+    """
+    index = faiss.IndexFlatL2(train_set.shape[1])
+    index.add(train_set)
+    D, _ = index.search(test_set, n_neighbours)
+    return np.sum(D, axis=1)
 
 
 def save_checkpoint(state, filename):
     """ saving model's weights """
-    print ('=> saving checkpoint')
+    print('=> saving checkpoint\n')
     torch.save(state, filename)
 
 
 def load_checkpoint(checkpoint_path, model):
     """ loading model's weights """
-    print ('=> loading checkpoint')
+    print('=> loading checkpoint\n')
     checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint['state_dict'])
 

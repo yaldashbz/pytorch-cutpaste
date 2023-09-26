@@ -30,6 +30,9 @@ class ProjectionNet(nn.Module):
         self.out = nn.Linear(last_layer, num_classes)
     
     def forward(self, x):
+        # normalize
+        x = F.normalize(x, dim=-1)
+        
         embeds = self.resnet18(x)
         tmp = self.head(embeds)
         logits = self.out(tmp)
