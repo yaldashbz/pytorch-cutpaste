@@ -2,12 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models import resnet18
-
+from torchvision import transforms
 
 class ProjectionNet(nn.Module):
     def __init__(self, pretrained=True, head_layers=[512,512,512,512,512,512,512,512,128], num_classes=2):
         super(ProjectionNet, self).__init__()
-        #self.resnet18 = torch.hub.load('pytorch/vision:v0.9.0', 'resnet18', pretrained=pretrained)
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
+        self.norm = transforms.Normalize(mean=mean, std=std)
+        self.pretrained = pretrained
         self.resnet18 = resnet18(pretrained=pretrained)
 
         # create MPL head as seen in the code in: https://github.com/uoguelph-mlrg/Cutout/blob/master/util/cutout.py
@@ -31,7 +34,9 @@ class ProjectionNet(nn.Module):
     
     def forward(self, x):
         # normalize
-        x = F.normalize(x, dim=-1)
+        if self.pretrained:
+            x = self.norm(x)
+        # x = F.normalize(x, dim=-1)
         
         embeds = self.resnet18(x)
         tmp = self.head(embeds)
